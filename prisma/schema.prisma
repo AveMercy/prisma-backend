@@ -1,0 +1,215 @@
+// Настройки генератора и подключения
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- ENUMS (Типы данных из SQL) ---
+
+enum UserRole {
+  student
+  teacher
+  admin
+}
+
+enum CourseLevel {
+  beginner
+  intermediate
+  advanced
+}
+
+enum LectureType {
+  theory
+  practice
+  quiz
+}
+
+enum TagType {
+  language
+  tool
+  general
+}
+
+// --- MODELS ---
+
+// 1. Группы (Для студентов от организаций)
+model Group {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique // [cite: 7] - исправлено
+  inviteCode String   @unique
+  users      User[]
+  createdAt  DateTime @default(now())
+
+  @@map("groups")
+}
+
+// 2. Пользователи
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  fullName     String   @map("full_name")
+  role         UserRole @default(student)
+  groupId      Int?     @map("group_id")
+  group        Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  avatarUrl    String?  @map("avatar_url")
+  settings     Json     @default("{\"theme\": \"light\", \"show_achievements\": true}")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Связи
+  authoredCourses Course[]          @relation("AuthorToCourse")
+  progress        UserProgress[]
+  reactions       Reaction[]
+  achievements    UserAchievement[]
+  submissions     Submission[]
+
+  @@map("users")
+}
+
+// 3. Категории (Направления)
+model Category {
+  id      Int      @id @default(autoincrement())
+  name    String   @unique
+  courses Course[]
+
+  @@map("categories")
+}
+
+// 4. Теги (Инструменты и языки)
+model Tag {
+  id      Int      @id @default(autoincrement())
+  name    String   @unique
+  type    TagType  @default(general)
+  courses Course[] @relation("CourseTags")
+
+  @@map("tags")
+}
+
+// 5. Курсы
+model Course {
+  id           Int         @id @default(autoincrement())
+  title        String
+  description  String?
+  thumbnailUrl String?     @map("thumbnail_url")
+  categoryId   Int?        @map("category_id")
+  category     Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  authorId     Int         @map("author_id")
+  author       User        @relation("AuthorToCourse", fields: [authorId], references: [id])
+  level        CourseLevel @default(beginner)
+  isPublished  Boolean     @default(false) @map("is_published")
+  createdAt    DateTime    @default(now()) @map("created_at")
+
+  tags    Tag[]    @relation("CourseTags")
+  modules Module[]
+
+  @@map("courses")
+}
+
+// 6. Контент (Модули и Лекции)
+model Module {
+  id         Int       @id @default(autoincrement())
+  courseId   Int       @map("course_id")
+  course     Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title      String
+  orderIndex Int       @default(0) @map("order_index")
+  lectures   Lecture[]
+
+  @@map("modules")
+}
+
+model Lecture {
+  id         Int         @id @default(autoincrement())
+  moduleId   Int         @map("module_id")
+  module     Module      @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title      String
+  content    String? // Markdown текст
+  type       LectureType @default(theory)
+  isVisible  Boolean     @default(true) @map("is_visible")
+  orderIndex Int         @default(0) @map("order_index")
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  progress    UserProgress[]
+  reactions   Reaction[]
+  assignments Assignment[]
+
+  @@map("lectures")
+}
+
+// 7. Прогресс и Интерактив
+model UserProgress {
+  userId      Int      @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lectureId   Int      @map("lecture_id")
+  lecture     Lecture  @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+  isCompleted Boolean  @default(true) @map("is_completed")
+  completedAt DateTime @default(now()) @map("completed_at")
+
+  @@id([userId, lectureId])
+  @@map("user_progress")
+}
+
+model Reaction {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @map("user_id")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lectureId    Int      @map("lecture_id")
+  lecture      Lecture  @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+  reactionType String   @map("reaction_type") // 👍, 🤯, 💤, ❓
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("reactions")
+}
+
+// 8. Достижения
+model Achievement {
+  id              Int               @id @default(autoincrement())
+  name            String
+  description     String?
+  iconUrl         String?           @map("icon_url")
+  requirementCode String            @map("requirement_code")
+  users           UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  userId        Int         @map("user_id")
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId Int         @map("achievement_id")
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  earnedAt      DateTime    @default(now()) @map("earned_at")
+
+  @@id([userId, achievementId])
+  @@map("user_achievements")
+}
+
+// 9. Задания и Сдача работ
+model Assignment {
+  id              Int          @id @default(autoincrement())
+  lectureId       Int          @map("lecture_id")
+  lecture         Lecture      @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+  title           String
+  taskDescription String?      @map("task_description")
+  dueDate         DateTime?    @map("due_date")
+  submissions     Submission[]
+
+  @@map("assignments")
+}
+
+model Submission {
+  id           Int        @id @default(autoincrement())
+  assignmentId Int        @map("assignment_id")
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId    Int        @map("student_id")
+  student      User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  solutionUrl  String?    @map("solution_url") // GitHub или ссылка на файл
+  grade        Int?
+  feedback     String?
+  submittedAt  DateTime   @default(now()) @map("submitted_at")
+
+  @@map("submissions")
+}
