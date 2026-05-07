@@ -13,6 +13,8 @@ import reactionRoutes from './src/routes/reactionRoutes.js';
 import categoryRoutes from './src/routes/categoryRoutes.js';
 import tagRoutes from './src/routes/tagRoutes.js';
 import achievementRoutes from './src/routes/achievementRoutes.js';
+import userRoutes from './src/routes/userRoutes.js';
+import uploadRoutes from './src/routes/uploadRoutes.js';
 
 dotenv.config();
 
@@ -34,6 +36,8 @@ app.use('/api/reactions', reactionRoutes);
 app.use('/api/category', categoryRoutes);
 app.use('/api/tag', tagRoutes);
 app.use('/api/achievement', achievementRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/upload', uploadRoutes);
 
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });

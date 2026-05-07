@@ -32,6 +32,31 @@ export const register = async (req, res) => {
         res.status(500).json({ error: 'Ошибка сервера при регистрации.' });
     }
 };
+export const getMe = async (req, res) => {
+    try {
+        // req.user.id должен подставиться из middleware protect после проверки JWT
+        const user = await prisma.user.findUnique({
+            where: { id: req.user.id },
+            select: {
+                id: true,
+                email: true,
+                fullName: true,
+                role: true,
+                avatarUrl: true,
+                settings: true,
+                groupId: true,
+            },
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'Пользователь не найден' });
+        }
+
+        res.json({ user });
+    } catch (error) {
+        res.status(500).json({ message: 'Ошибка сервера' });
+    }
+};
 
 export const login = async (req, res) => {
     try {
@@ -48,7 +73,7 @@ export const login = async (req, res) => {
         }
 
         const token = jwt.sign(
-            { userId: user.id, role: user.role },
+            { id: user.id, role: user.role },  // было userId, стало id
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
