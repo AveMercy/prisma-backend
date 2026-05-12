@@ -2,16 +2,13 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Отметить лекцию как пройденную (или снять отметку)
 export const toggleLectureProgress = async (req, res) => {
     try {
         const { lectureId, isCompleted } = req.body;
-        const userId = req.user.userId;
+        const userId = req.user.id; // БЫЛО userId
 
-        // Используем upsert: обновляем, если запись есть, или создаем новую
         const progress = await prisma.userProgress.upsert({
             where: {
-                // Композитный ключ из схемы: @@id([userId, lectureId])
                 userId_lectureId: {
                     userId: userId,
                     lectureId: parseInt(lectureId)
@@ -27,7 +24,6 @@ export const toggleLectureProgress = async (req, res) => {
                 isCompleted: isCompleted !== undefined ? isCompleted : true
             }
         });
-
         res.status(200).json(progress);
     } catch (error) {
         console.error('Ошибка сохранения прогресса:', error);
@@ -35,13 +31,11 @@ export const toggleLectureProgress = async (req, res) => {
     }
 };
 
-// Получить прогресс студента по конкретному курсу (в процентах)
 export const getCourseProgress = async (req, res) => {
     try {
         const { courseId } = req.params;
-        const userId = req.user.userId;
+        const userId = req.user.id; // БЫЛО userId
 
-        // 1. Находим все лекции в этом курсе
         const courseLectures = await prisma.lecture.findMany({
             where: { module: { courseId: parseInt(courseId) } },
             select: { id: true }
@@ -54,7 +48,6 @@ export const getCourseProgress = async (req, res) => {
 
         const lectureIds = courseLectures.map(l => l.id);
 
-        // 2. Считаем, сколько из них пройдено пользователем
         const completedCount = await prisma.userProgress.count({
             where: {
                 userId: userId,
@@ -73,5 +66,30 @@ export const getCourseProgress = async (req, res) => {
     } catch (error) {
         console.error('Ошибка расчета прогресса:', error);
         res.status(500).json({ error: 'Ошибка сервера при расчете прогресса.' });
+    }
+};
+
+// Новый метод: получить прогресс по всем курсам пользователя
+export const getMyProgress = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const progress = await prisma.userProgress.findMany({
+            where: { userId },
+            include: {
+                lecture: {
+                    include: {
+                        module: {
+                            include: { course: true }
+                        }
+                    }
+                }
+            }
+        });
+
+        res.json({ progress });
+    } catch (error) {
+        console.error('Ошибка получения прогресса:', error);
+        res.status(500).json({ error: 'Ошибка сервера.' });
     }
 };

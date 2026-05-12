@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 // Получение профиля текущего пользователя
 export const getProfile = async (req, res) => {
     try {
-        const userId = req.user.userId;
+        const userId = req.user.id; // было userId
 
         const user = await prisma.user.findUnique({
             where: { id: userId },
@@ -42,7 +42,7 @@ export const getProfile = async (req, res) => {
 // Обновление данных профиля (включая аватарку)
 export const updateProfile = async (req, res) => {
     try {
-        const userId = req.user.userId;
+        const userId = req.user.id; // было userId
         const { fullName, avatarUrl, settings } = req.body;
 
         const updatedUser = await prisma.user.update({

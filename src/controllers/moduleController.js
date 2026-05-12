@@ -4,17 +4,15 @@ const prisma = new PrismaClient();
 
 export const createModule = async (req, res) => {
     try {
-        const { title, description, order, courseId } = req.body;
+        const { title, orderIndex, courseId } = req.body;
 
         const newModule = await prisma.module.create({
             data: {
                 title,
-                description,
-                order: parseInt(order) || 0,
+                orderIndex: parseInt(orderIndex) || 0,
                 courseId: parseInt(courseId)
             }
         });
-
         res.status(201).json(newModule);
     } catch (error) {
         console.error('Ошибка при создании модуля:', error);
@@ -27,10 +25,11 @@ export const getModulesByCourse = async (req, res) => {
         const { courseId } = req.params;
         const modules = await prisma.module.findMany({
             where: { courseId: parseInt(courseId) },
-            orderBy: { order: 'asc' },
+            orderBy: { orderIndex: 'asc' },
             include: {
                 lectures: {
-                    orderBy: { order: 'asc' }
+                    orderBy: { orderIndex: 'asc' },
+                    select: { id: true, title: true, type: true, orderIndex: true, isVisible: true }
                 }
             }
         });
@@ -58,9 +57,7 @@ export const updateModule = async (req, res) => {
 export const deleteModule = async (req, res) => {
     try {
         const { id } = req.params;
-        await prisma.module.delete({
-            where: { id: parseInt(id) }
-        });
+        await prisma.module.delete({ where: { id: parseInt(id) } });
         res.json({ message: 'Модуль успешно удален.' });
     } catch (error) {
         console.error('Ошибка при удалении модуля:', error);

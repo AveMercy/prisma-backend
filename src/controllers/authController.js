@@ -7,7 +7,7 @@ const SALT_ROUNDS = 10;
 
 export const register = async (req, res) => {
     try {
-        const { email, password, fullName, role, groupId } = req.body;
+        const { email, password, fullName, role, inviteCode } = req.body;
 
         const existingUser = await prisma.user.findUnique({ where: { email } });
         if (existingUser) {
@@ -16,17 +16,47 @@ export const register = async (req, res) => {
 
         const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
+        // Если есть inviteCode — найти группу
+        let groupId = null;
+        if (inviteCode) {
+            const group = await prisma.group.findUnique({ where: { inviteCode } });
+            if (group) {
+                groupId = group.id;
+            } else {
+                return res.status(400).json({ error: 'Группа с таким кодом не найдена.' });
+            }
+        }
+
         const newUser = await prisma.user.create({
             data: {
                 email,
                 passwordHash,
                 fullName,
                 role: role || 'student',
-                groupId: groupId ? parseInt(groupId) : null,
+                groupId,
             },
+            select: {
+                id: true,
+                email: true,
+                fullName: true,
+                role: true,
+                avatarUrl: true,
+                settings: true,
+                groupId: true,
+            }
         });
 
-        res.status(201).json({ message: 'Пользователь успешно зарегистрирован', userId: newUser.id });
+        const token = jwt.sign(
+            { id: newUser.id, role: newUser.role },
+            process.env.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        res.status(201).json({
+            message: 'Пользователь успешно зарегистрирован',
+            token,
+            user: newUser
+        });
     } catch (error) {
         console.error('Ошибка регистрации:', error);
         res.status(500).json({ error: 'Ошибка сервера при регистрации.' });
@@ -34,9 +64,11 @@ export const register = async (req, res) => {
 };
 export const getMe = async (req, res) => {
     try {
-        // req.user.id должен подставиться из middleware protect после проверки JWT
+        // В JWT у тебя { id: user.id, role: user.role }
+        const userId = req.user.id;
+
         const user = await prisma.user.findUnique({
-            where: { id: req.user.id },
+            where: { id: userId },
             select: {
                 id: true,
                 email: true,
@@ -54,6 +86,7 @@ export const getMe = async (req, res) => {
 
         res.json({ user });
     } catch (error) {
+        console.error('Ошибка getMe:', error);
         res.status(500).json({ message: 'Ошибка сервера' });
     }
 };
@@ -62,7 +95,20 @@ export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await prisma.user.findUnique({
+            where: { email },
+            select: {
+                id: true,
+                email: true,
+                fullName: true,
+                role: true,
+                avatarUrl: true,
+                settings: true,
+                groupId: true,
+                passwordHash: true // нужно для проверки пароля
+            }
+        });
+
         if (!user) {
             return res.status(401).json({ error: 'Неверный email или пароль.' });
         }
@@ -73,20 +119,18 @@ export const login = async (req, res) => {
         }
 
         const token = jwt.sign(
-            { id: user.id, role: user.role },  // было userId, стало id
+            { id: user.id, role: user.role },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
 
+        // Убираем passwordHash из ответа
+        const { passwordHash, ...safeUser } = user;
+
         res.json({
             message: 'Вход выполнен успешно',
             token,
-            user: {
-                id: user.id,
-                email: user.email,
-                fullName: user.fullName,
-                role: user.role
-            }
+            user: safeUser
         });
     } catch (error) {
         console.error('Ошибка входа:', error);

@@ -4,8 +4,10 @@ import {
     createCourse,
     getCourseById,
     updateCourse,
-    deleteCourse
+    deleteCourse,
+    getMyCourses
 } from '../controllers/courseController.js';
+
 import { authenticateToken, authorizeRoles } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -18,5 +20,7 @@ router.get('/:id', authenticateToken, getCourseById);
 router.post('/', authenticateToken, authorizeRoles('teacher', 'admin'), createCourse);
 router.put('/:id', authenticateToken, authorizeRoles('teacher', 'admin'), updateCourse);
 router.delete('/:id', authenticateToken, authorizeRoles('teacher', 'admin'), deleteCourse);
+
+router.get('/my', authenticateToken, getMyCourses);
 
 export default router;

@@ -22,10 +22,10 @@ export const getAllCategories = async (req, res) => {
 // Создать категорию
 export const createCategory = async (req, res) => {
     try {
-        const { name, description } = req.body;
+        const { name } = req.body;  // убрал description
 
         const category = await prisma.category.create({
-            data: { name, description }
+            data: { name }  // убрал description
         });
 
         res.status(201).json(category);

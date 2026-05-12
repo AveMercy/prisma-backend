@@ -4,19 +4,17 @@ const prisma = new PrismaClient();
 
 export const createLecture = async (req, res) => {
     try {
-        const { title, content, videoUrl, type, order, moduleId } = req.body;
+        const { title, content, type, orderIndex, moduleId } = req.body;
 
         const lecture = await prisma.lecture.create({
             data: {
                 title,
                 content,
-                videoUrl,
                 type: type || 'theory',
-                order: parseInt(order) || 0,
+                orderIndex: parseInt(orderIndex) || 0,
                 moduleId: parseInt(moduleId)
             }
         });
-
         res.status(201).json(lecture);
     } catch (error) {
         console.error('Ошибка при создании лекции:', error);
@@ -35,11 +33,7 @@ export const getLectureById = async (req, res) => {
                 }
             }
         });
-
-        if (!lecture) {
-            return res.status(404).json({ error: 'Лекция не найдена.' });
-        }
-
+        if (!lecture) return res.status(404).json({ error: 'Лекция не найдена.' });
         res.json(lecture);
     } catch (error) {
         console.error('Ошибка при получении лекции:', error);
@@ -64,9 +58,7 @@ export const updateLecture = async (req, res) => {
 export const deleteLecture = async (req, res) => {
     try {
         const { id } = req.params;
-        await prisma.lecture.delete({
-            where: { id: parseInt(id) }
-        });
+        await prisma.lecture.delete({ where: { id: parseInt(id) } });
         res.json({ message: 'Лекция удалена.' });
     } catch (error) {
         console.error('Ошибка при удалении лекции:', error);

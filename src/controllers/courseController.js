@@ -2,6 +2,24 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+export const getMyCourses = async (req, res) => {
+    try {
+        // Временная заглушка: возвращаем все курсы
+        // Позже заменим на фильтрацию по enrolled
+        const courses = await prisma.course.findMany({
+            where: { isPublished: true },
+            include: {
+                author: { select: { fullName: true } },
+                category: true,
+                _count: { select: { modules: true } }
+            }
+        });
+        res.json({ courses });
+    } catch (error) {
+        console.error('Ошибка получения моих курсов:', error);
+        res.status(500).json({ error: 'Ошибка сервера.' });
+    }
+};
 // Получение всех курсов с фильтрацией (опционально)
 export const getAllCourses = async (req, res) => {
     try {
@@ -33,8 +51,7 @@ export const getAllCourses = async (req, res) => {
 export const createCourse = async (req, res) => {
     try {
         const { title, description, level, categoryId, bannerUrl } = req.body;
-        const authorId = req.user.userId; // Берем ID из токена (authMiddleware)
-
+        const authorId = req.user.id;
         const newCourse = await prisma.course.create({
             data: {
                 title,
@@ -59,18 +76,21 @@ export const getCourseById = async (req, res) => {
         const { id } = req.params;
         const course = await prisma.course.findUnique({
             where: { id: parseInt(id) },
+            orderBy: { orderIndex: 'asc' },
             include: {
                 author: {
                     select: { id: true, fullName: true, avatarUrl: true }
                 },
                 category: true,
                 modules: {
-                    orderBy: { order: 'asc' },
+                    orderBy: { orderIndex: 'asc' },
                     include: {
                         lectures: {
-                            orderBy: { order: 'asc' },
+                            orderBy: { orderIndex: 'asc' },
                             select: { id: true, title: true, type: true }
                         }
+
+
                     }
                 }
             }
