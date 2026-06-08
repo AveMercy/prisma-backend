@@ -55,17 +55,27 @@ model User {
   fullName     String   @map("full_name")
   role         UserRole @default(student)
   groupId      Int?     @map("group_id")
-  group        Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
   avatarUrl    String?  @map("avatar_url")
   settings     Json     @default("{\"theme\": \"light\", \"show_achievements\": true}")
   createdAt    DateTime @default(now()) @map("created_at")
+  githubToken  String?  @map("github_token")
 
   // Связи
-  authoredCourses Course[]          @relation("AuthorToCourse")
-  progress        UserProgress[]
-  reactions       Reaction[]
-  achievements    UserAchievement[]
-  submissions     Submission[]
+  authoredCourses  Course[]           @relation("AuthorToCourse")
+  progress         UserProgress[]
+  reactions        Reaction[]
+  achievements     UserAchievement[]
+  submissions      Submission[]
+  CourseEnrollment CourseEnrollment[]
+  Group            Group?             @relation(fields: [groupId], references: [id])
+
+  birthDate          DateTime?            @map("birth_date")
+  bio                String? // "О себе"
+  phone              String?
+  telegram           String?
+  github             String?
+  website            String?
+  PracticeSubmission PracticeSubmission[]
 
   @@map("users")
 }
@@ -103,8 +113,9 @@ model Course {
   isPublished  Boolean     @default(false) @map("is_published")
   createdAt    DateTime    @default(now()) @map("created_at")
 
-  tags    Tag[]    @relation("CourseTags")
-  modules Module[]
+  tags             Tag[]              @relation("CourseTags")
+  modules          Module[]
+  CourseEnrollment CourseEnrollment[]
 
   @@map("courses")
 }
@@ -132,9 +143,10 @@ model Lecture {
   orderIndex Int         @default(0) @map("order_index")
   createdAt  DateTime    @default(now()) @map("created_at")
 
-  progress    UserProgress[]
-  reactions   Reaction[]
-  assignments Assignment[]
+  progress           UserProgress[]
+  reactions          Reaction[]
+  assignments        Assignment[]
+  PracticeSubmission PracticeSubmission[]
 
   @@map("lectures")
 }
@@ -212,4 +224,31 @@ model Submission {
   submittedAt  DateTime   @default(now()) @map("submitted_at")
 
   @@map("submissions")
+}
+
+model CourseEnrollment {
+  userId     Int      @map("user_id")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId   Int      @map("course_id")
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status     String   @default("active") @map("status") // active, favorite, archived
+  enrolledAt DateTime @default(now()) @map("enrolled_at")
+
+  @@id([userId, courseId])
+  @@map("course_enrollments")
+}
+
+model PracticeSubmission {
+  id          Int      @id @default(autoincrement())
+  lectureId   Int      @map("lecture_id")
+  lecture     Lecture  @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+  studentId   Int      @map("student_id")
+  student     User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  code        String
+  aiReview    Json?    @map("ai_review")
+  grade       Int?
+  feedback    String?
+  submittedAt DateTime @default(now()) @map("submitted_at")
+
+  @@map("practice_submissions")
 }

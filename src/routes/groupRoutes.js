@@ -1,23 +1,27 @@
 import express from 'express';
 import {
     createGroup,
-    getAllGroups,
-    getGroupById,
-    deleteGroup
+    getTeacherGroups,
+    getMyGroup,
+    joinGroup,
+    removeStudent,
+    getGroupById
 } from '../controllers/groupController.js';
 import { authenticateToken, authorizeRoles } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Все роуты групп требуют авторизации
 router.use(authenticateToken);
 
-// Просмотр доступен всем авторизованным
-router.get('/', getAllGroups);
-router.get('/:id', getGroupById);
+// Студент: моя группа
+router.get('/my', getMyGroup);
+// Студент: присоединиться
+router.post('/join', joinGroup);
 
-// Создание и удаление — только для учителей и админов
+// Преподаватель: группы
+router.get('/teacher', authorizeRoles('teacher', 'admin'), getTeacherGroups);
 router.post('/', authorizeRoles('teacher', 'admin'), createGroup);
-router.delete('/:id', authorizeRoles('teacher', 'admin'), deleteGroup);
+router.get('/:id', authorizeRoles('teacher', 'admin'), getGroupById);
+router.post('/remove-student', authorizeRoles('teacher', 'admin'), removeStudent);
 
 export default router;

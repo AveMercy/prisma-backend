@@ -1,13 +1,13 @@
 import express from 'express';
-import { addReaction, getLectureReactions } from '../controllers/reactionController.js';
+import { setReaction, getReactions, getMyReaction } from '../controllers/reactionController.js';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Просмотр сводки реакций доступен всем (даже без токена, если нужно, но пока защитим)
-router.get('/lecture/:lectureId', authenticateToken, getLectureReactions);
+router.use(authenticateToken);
 
-// Ставить реакции могут только авторизованные студенты/пользователи
-router.post('/', authenticateToken, addReaction);
+router.post('/', setReaction);
+router.get('/:lectureId', getReactions);
+router.get('/my/:lectureId', getMyReaction);
 
 export default router;

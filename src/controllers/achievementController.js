@@ -75,3 +75,21 @@ export const awardAchievement = async (req, res) => {
         res.status(500).json({ error: 'Ошибка сервера.' });
     }
 };
+
+export const getNewAchievements = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const achievements = await prisma.userAchievement.findMany({
+            where: { userId },
+            include: { achievement: true },
+            orderBy: { earnedAt: 'desc' },
+            take: 5
+        });
+
+        res.json({ achievements });
+    } catch (error) {
+        console.error('Ошибка получения новых ачивок:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+};

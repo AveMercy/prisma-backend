@@ -5,22 +5,30 @@ import {
     getCourseById,
     updateCourse,
     deleteCourse,
-    getMyCourses
+    getMyCourses,
+    enrollCourse,
+    unenrollCourse,
+    updateCourseStatus
 } from '../controllers/courseController.js';
 
 import { authenticateToken, authorizeRoles } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
-
-// Публичные роуты (но всё равно требуем логин для статистики/доступа)
+// Публичные роуты
 router.get('/', authenticateToken, getAllCourses);
+router.get('/my', authenticateToken, getMyCourses);
+
+// Статус и запись/отписка ДО /:id
+router.post('/enroll', authenticateToken, enrollCourse);
+router.post('/unenroll', authenticateToken, unenrollCourse);
+router.put('/status', authenticateToken, updateCourseStatus);
+
+// /:id — ПОСЛЕДНИМ
 router.get('/:id', authenticateToken, getCourseById);
 
-// Роуты управления контентом (только учитель или админ)
+// Роуты управления контентом
 router.post('/', authenticateToken, authorizeRoles('teacher', 'admin'), createCourse);
 router.put('/:id', authenticateToken, authorizeRoles('teacher', 'admin'), updateCourse);
 router.delete('/:id', authenticateToken, authorizeRoles('teacher', 'admin'), deleteCourse);
-
-router.get('/my', authenticateToken, getMyCourses);
 
 export default router;

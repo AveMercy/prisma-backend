@@ -1,19 +1,44 @@
 import { PrismaClient } from '@prisma/client';
+import { checkAchievements } from '../utils/achievements.js';
 
 const prisma = new PrismaClient();
 
 export const getMyCourses = async (req, res) => {
     try {
-        // Временная заглушка: возвращаем все курсы
-        // Позже заменим на фильтрацию по enrolled
-        const courses = await prisma.course.findMany({
-            where: { isPublished: true },
+        const userId = req.user.id;
+
+        const enrollments = await prisma.courseEnrollment.findMany({
+            where: { userId },
             include: {
-                author: { select: { fullName: true } },
-                category: true,
-                _count: { select: { modules: true } }
+                course: {
+                    include: {
+                        author: { select: { fullName: true } },
+                        category: true,
+                        tags: true,
+                        _count: { select: { modules: true } }
+                    }
+                }
             }
         });
+
+        const courses = enrollments.map(e => ({
+            ...e.course,
+            enrollment: { status: e.status }
+        }));
+
+        if (courses.length === 0) {
+            const allCourses = await prisma.course.findMany({
+                where: { isPublished: true },
+                include: {
+                    author: { select: { fullName: true } },
+                    category: true,
+                    tags: true,
+                    _count: { select: { modules: true } }
+                }
+            });
+            return res.json({ courses: allCourses.map(c => ({ ...c, enrollment: { status: 'active' } })) });
+        }
+
         res.json({ courses });
     } catch (error) {
         console.error('Ошибка получения моих курсов:', error);
@@ -35,6 +60,7 @@ export const getAllCourses = async (req, res) => {
                     select: { fullName: true }
                 },
                 category: true,
+                tags: true,
                 _count: {
                     select: { modules: true }
                 }
@@ -76,7 +102,6 @@ export const getCourseById = async (req, res) => {
         const { id } = req.params;
         const course = await prisma.course.findUnique({
             where: { id: parseInt(id) },
-            orderBy: { orderIndex: 'asc' },
             include: {
                 author: {
                     select: { id: true, fullName: true, avatarUrl: true }
@@ -133,5 +158,65 @@ export const deleteCourse = async (req, res) => {
     } catch (error) {
         console.error('Ошибка при удалении курса:', error);
         res.status(500).json({ error: 'Ошибка при удалении.' });
+    }
+};
+
+// Записаться на курс
+export const enrollCourse = async (req, res) => {
+    try {
+        const { courseId } = req.body;
+        const userId = req.user.id;
+
+        const existing = await prisma.courseEnrollment.findUnique({
+            where: { userId_courseId: { userId, courseId: parseInt(courseId) } }
+        });
+
+        if (existing) {
+            return res.status(400).json({ error: 'Вы уже записаны на этот курс' });
+        }
+
+        await prisma.courseEnrollment.create({
+            data: { userId, courseId: parseInt(courseId) }
+        });
+
+        res.json({ message: 'Вы записаны на курс' });
+    } catch (error) {
+        console.error('Ошибка записи на курс:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+};
+
+// Отписаться от курса
+export const unenrollCourse = async (req, res) => {
+    try {
+        const { courseId } = req.body;
+        const userId = req.user.id;
+
+        await prisma.courseEnrollment.deleteMany({
+            where: { userId, courseId: parseInt(courseId) }
+        });
+
+        res.json({ message: 'Вы отписались от курса' });
+    } catch (error) {
+        console.error('Ошибка отписки:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+};
+
+// Изменить статус курса (избранное/архив)
+export const updateCourseStatus = async (req, res) => {
+    try {
+        const { courseId, status } = req.body; // status: 'active' | 'favorite' | 'archived'
+        const userId = req.user.id;
+
+        const enrollment = await prisma.courseEnrollment.update({
+            where: { userId_courseId: { userId, courseId: parseInt(courseId) } },
+            data: { status: status || 'active' }
+        });
+
+        res.json(enrollment);
+    } catch (error) {
+        console.error('Ошибка обновления статуса:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
     }
 };

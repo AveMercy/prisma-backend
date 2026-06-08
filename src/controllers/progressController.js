@@ -1,11 +1,12 @@
 import { PrismaClient } from '@prisma/client';
+import { checkAchievements } from '../utils/achievements.js';
 
 const prisma = new PrismaClient();
 
 export const toggleLectureProgress = async (req, res) => {
     try {
         const { lectureId, isCompleted } = req.body;
-        const userId = req.user.id; // БЫЛО userId
+        const userId = req.user.id;
 
         const progress = await prisma.userProgress.upsert({
             where: {
@@ -25,6 +26,7 @@ export const toggleLectureProgress = async (req, res) => {
             }
         });
         res.status(200).json(progress);
+        try { await checkAchievements(userId); } catch (e) { console.error('Achievement error:', e); }
     } catch (error) {
         console.error('Ошибка сохранения прогресса:', error);
         res.status(500).json({ error: 'Ошибка сервера при сохранении прогресса.' });
@@ -34,7 +36,7 @@ export const toggleLectureProgress = async (req, res) => {
 export const getCourseProgress = async (req, res) => {
     try {
         const { courseId } = req.params;
-        const userId = req.user.id; // БЫЛО userId
+        const userId = req.user.id;
 
         const courseLectures = await prisma.lecture.findMany({
             where: { module: { courseId: parseInt(courseId) } },
@@ -58,18 +60,13 @@ export const getCourseProgress = async (req, res) => {
 
         const progressPercentage = Math.round((completedCount / totalLectures) * 100);
 
-        res.json({
-            progressPercentage,
-            completed: completedCount,
-            total: totalLectures
-        });
+        res.json({ progressPercentage, completed: completedCount, total: totalLectures });
     } catch (error) {
         console.error('Ошибка расчета прогресса:', error);
         res.status(500).json({ error: 'Ошибка сервера при расчете прогресса.' });
     }
 };
 
-// Новый метод: получить прогресс по всем курсам пользователя
 export const getMyProgress = async (req, res) => {
     try {
         const userId = req.user.id;

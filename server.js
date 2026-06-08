@@ -15,6 +15,9 @@ import tagRoutes from './src/routes/tagRoutes.js';
 import achievementRoutes from './src/routes/achievementRoutes.js';
 import userRoutes from './src/routes/userRoutes.js';
 import uploadRoutes from './src/routes/uploadRoutes.js';
+import aiRoutes from './src/routes/aiRoutes.js';
+import practiceRoutes from './src/routes/practiceRoutes.js';
+import githubRoutes from './src/routes/githubRoutes.js';
 
 dotenv.config();
 
@@ -30,6 +33,7 @@ app.use(cors({
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
+app.use('/api/ai', aiRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/courses', courseRoutes);
@@ -43,6 +47,8 @@ app.use('/api/tag', tagRoutes);
 app.use('/api/achievement', achievementRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/practice', practiceRoutes);
+app.use('/api/github', githubRoutes);
 
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });
