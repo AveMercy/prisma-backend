@@ -20,7 +20,6 @@ export const authenticateToken = (req, res, next) => {
     });
 };
 
-// Проверка ролей (например, только для учителей или админов)
 export const authorizeRoles = (...roles) => {
     return (req, res, next) => {
         if (!roles.includes(req.user.role)) {

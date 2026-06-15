@@ -46,7 +46,6 @@ export const getMyAssignments = async (req, res) => {
     try {
         const userId = req.user.id;
 
-        // Получаем курсы, на которые записан студент
         const enrollments = await prisma.courseEnrollment.findMany({
             where: { userId },
             select: { courseId: true }
@@ -54,7 +53,6 @@ export const getMyAssignments = async (req, res) => {
 
         const courseIds = enrollments.map(e => e.courseId);
 
-        // Получаем задания из лекций этих курсов
         const assignments = await prisma.assignment.findMany({
             where: {
                 lecture: {

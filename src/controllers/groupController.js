@@ -29,7 +29,6 @@ export const getTeacherGroups = async (req, res) => {
     try {
         const teacherId = req.user.id;
 
-        // Получаем пользователя с его группой
         const teacher = await prisma.user.findUnique({
             where: { id: teacherId },
             select: { groupId: true }
@@ -94,7 +93,6 @@ export const joinGroup = async (req, res) => {
             return res.status(404).json({ error: 'Группа с таким кодом не найдена' });
         }
 
-        // Проверяем, не состоит ли уже в группе
         const user = await prisma.user.findUnique({ where: { id: userId } });
         if (user.groupId) {
             return res.status(400).json({ error: 'Вы уже состоите в группе' });

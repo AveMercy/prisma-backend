@@ -3,7 +3,7 @@ import { checkAchievements } from '../utils/achievements.js';
 
 const prisma = new PrismaClient();
 
-// Сдать задание (с файлом)
+// Сдать задание
 export const submitWork = async (req, res) => {
     try {
         const { assignmentId, comment } = req.body;

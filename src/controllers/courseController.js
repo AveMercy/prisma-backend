@@ -206,7 +206,7 @@ export const unenrollCourse = async (req, res) => {
 // Изменить статус курса (избранное/архив)
 export const updateCourseStatus = async (req, res) => {
     try {
-        const { courseId, status } = req.body; // status: 'active' | 'favorite' | 'archived'
+        const { courseId, status } = req.body;
         const userId = req.user.id;
 
         const enrollment = await prisma.courseEnrollment.update({

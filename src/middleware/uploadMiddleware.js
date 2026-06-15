@@ -7,20 +7,17 @@ const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         let folder = 'uploads/';
 
-        // Распределяем файлы по папкам в зависимости от поля в запросе
         if (file.fieldname === 'avatar') folder += 'avatars/';
         else if (file.fieldname === 'banner') folder += 'banners/';
         else if (file.fieldname === 'document') folder += 'documents/';
         else folder += 'misc/';
 
-        // Создаем папку, если её нет
         if (!fs.existsSync(folder)) {
             fs.mkdirSync(folder, { recursive: true });
         }
         cb(null, folder);
     },
     filename: (req, file, cb) => {
-        // Генерируем уникальное имя: timestamp + рандом + расширение
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         cb(null, uniqueSuffix + path.extname(file.originalname));
     }

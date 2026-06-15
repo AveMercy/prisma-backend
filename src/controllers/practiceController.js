@@ -7,13 +7,11 @@ export const submitPractice = async (req, res) => {
         const { lectureId, code, aiReview } = req.body;
         const studentId = req.user.id;
 
-        // Проверяем, не сдавал ли уже
         const existing = await prisma.practiceSubmission.findFirst({
             where: { lectureId: parseInt(lectureId), studentId }
         });
 
         if (existing) {
-            // Обновляем существующую
             const updated = await prisma.practiceSubmission.update({
                 where: { id: existing.id },
                 data: { code, aiReview, submittedAt: new Date() }

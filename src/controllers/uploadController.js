@@ -4,7 +4,6 @@ export const uploadFile = (req, res) => {
             return res.status(400).json({ error: 'Файл не загружен' });
         }
 
-        // Формируем путь для сохранения в БД
         const filePath = `/${req.file.path.replace(/\\/g, '/')}`;
 
         res.status(201).json({

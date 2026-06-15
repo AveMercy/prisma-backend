@@ -154,7 +154,6 @@ export const reviewCode = async (req, res) => {
 
         const url = 'https://ai.api.cloud.yandex.net/v1/responses';
 
-        // Формируем строгий prompt для YandexGPT, как в generateLecture
         const prompt = `Ты — ИИ-ментор по программированию на платформе Prisma.
 Твоя задача — проверять код студента и давать полезные рекомендации.
 
@@ -205,7 +204,6 @@ ${code}`;
 
         const rawText = data.output?.[0]?.content?.[0]?.text || '';
 
-        // Извлекаем JSON-объект из ответа (регулярка ищет {...}) по аналогии с массивом в generateLecture
         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
             return res.status(500).json({ error: 'Не удалось распарсить JSON-ответ от ИИ' });
@@ -216,7 +214,6 @@ ${code}`;
         res.json({ review });
     } catch (error) {
         console.error('Ошибка ревью кода:', error);
-        // Изменим fallback-сообщение, чтобы сразу видеть, если бэк упал по другой причине
         res.json({
             review: {
                 passed: false,
@@ -244,7 +241,6 @@ export const submitCodeReview = async (req, res) => {
             });
         }
 
-        // Загружаем лекцию
         const lecture = await prisma.lecture.findUnique({
             where: { id: parseInt(lectureId) },
             select: { title: true, content: true }

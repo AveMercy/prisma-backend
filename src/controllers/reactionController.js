@@ -14,11 +14,9 @@ export const setReaction = async (req, res) => {
 
         if (existing) {
             if (existing.reactionType === reactionType) {
-                // Удаляем реакцию, если кликнули повторно
                 await prisma.reaction.delete({ where: { id: existing.id } });
                 return res.json({ message: 'Реакция удалена' });
             }
-            // Обновляем тип реакции
             const updated = await prisma.reaction.update({
                 where: { id: existing.id },
                 data: { reactionType }
@@ -28,7 +26,6 @@ export const setReaction = async (req, res) => {
         }
         await checkAchievements(userId);
 
-        // Создаём новую
         const reaction = await prisma.reaction.create({
             data: {
                 userId,

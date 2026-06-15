@@ -13,7 +13,6 @@ const pool = new Pool({
     database: process.env.DB_NAME,
 });
 
-// Проверка подключения при старте
 pool.connect((err, client, release) => {
     if (err) {
         console.error('Ошибка подключения к базе данных:', err.stack);

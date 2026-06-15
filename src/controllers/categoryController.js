@@ -8,7 +8,7 @@ export const getAllCategories = async (req, res) => {
         const categories = await prisma.category.findMany({
             include: {
                 _count: {
-                    select: { courses: true } // Считаем количество курсов в категории
+                    select: { courses: true }
                 }
             }
         });
@@ -22,10 +22,10 @@ export const getAllCategories = async (req, res) => {
 // Создать категорию
 export const createCategory = async (req, res) => {
     try {
-        const { name } = req.body;  // убрал description
+        const { name } = req.body;
 
         const category = await prisma.category.create({
-            data: { name }  // убрал description
+            data: { name }
         });
 
         res.status(201).json(category);

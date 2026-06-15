@@ -18,12 +18,10 @@ const router = express.Router();
 router.get('/', authenticateToken, getAllCourses);
 router.get('/my', authenticateToken, getMyCourses);
 
-// Статус и запись/отписка ДО /:id
 router.post('/enroll', authenticateToken, enrollCourse);
 router.post('/unenroll', authenticateToken, unenrollCourse);
 router.put('/status', authenticateToken, updateCourseStatus);
 
-// /:id — ПОСЛЕДНИМ
 router.get('/:id', authenticateToken, getCourseById);
 
 // Роуты управления контентом

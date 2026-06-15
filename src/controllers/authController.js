@@ -64,7 +64,6 @@ export const register = async (req, res) => {
 };
 export const getMe = async (req, res) => {
     try {
-        // В JWT у тебя { id: user.id, role: user.role }
         const userId = req.user.id;
 
         const user = await prisma.user.findUnique({
@@ -105,7 +104,7 @@ export const login = async (req, res) => {
                 avatarUrl: true,
                 settings: true,
                 groupId: true,
-                passwordHash: true // нужно для проверки пароля
+                passwordHash: true
             }
         });
 
@@ -124,7 +123,6 @@ export const login = async (req, res) => {
             { expiresIn: '24h' }
         );
 
-        // Убираем passwordHash из ответа
         const { passwordHash, ...safeUser } = user;
 
         res.json({
