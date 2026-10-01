@@ -1,17 +1,20 @@
 FROM node:20-alpine
 
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl libc6-compat
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
-
 COPY prisma ./prisma/
+
+RUN npm ci
+
 RUN npx prisma generate
 
 COPY . .
 
+RUN mkdir -p uploads
+
 EXPOSE 5000
 
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "npx prisma db push --skip-generate --accept-data-loss && node server.js"]
