@@ -31,6 +31,19 @@ const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
 
 app.use(cors({
     origin: (origin, cb) => {
+        // разрешаем запросы без Origin (curl, Postman, server-to-server)
+        // и Origin "null" (file://, sandboxed iframes, некоторые прокси)
+        if (!origin || origin === 'null') return cb(null, true);
+        if (allowedOrigins.includes(origin)) return cb(null, true);
+        cb(new Error(`CORS blocked: ${origin}`));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+app.use(cors({
+    origin: (origin, cb) => {
         if (!origin) return cb(null, true);
         if (allowedOrigins.includes(origin)) return cb(null, true);
         cb(new Error(`CORS blocked: ${origin}`));
