@@ -49,6 +49,7 @@ async function getAccessToken() {
 // ─────────────────────────────────────────────
 // Универсальный вызов GigaChat (возвращает { content, usage, model })
 // ─────────────────────────────────────────────
+
 async function callGigaChat({ system, user, temperature = 0.3, maxTokens = 2000, model = null }) {
     const token = await getAccessToken();
 
@@ -80,10 +81,24 @@ async function callGigaChat({ system, user, temperature = 0.3, maxTokens = 2000,
 
     const data = await response.json();
 
+    const finishReason = data.choices?.[0]?.finish_reason || 'unknown';
+    const usage = data.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+
+    // ─── ЛОГИРОВАНИЕ ───────────────────────────
+    console.log('──── GigaChat response ────');
+    console.log('model:', data.model || usedModel);
+    console.log('finish_reason:', finishReason);
+    console.log('usage:', JSON.stringify(usage));
+    if (finishReason === 'length') {
+        console.warn('⚠️  Response TRUNCATED by max_tokens!');
+    }
+    // ───────────────────────────────────────────
+
     return {
         content: data.choices?.[0]?.message?.content || '',
-        usage: data.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+        usage,
         model: data.model || usedModel,
+        finishReason,
     };
 }
 
@@ -135,6 +150,9 @@ const BLOCKS_EXAMPLE = `
 // Парсер блоков из ответа ИИ (с постобработкой)
 // ─────────────────────────────────────────────
 function parseBlocksFromAI(rawText) {
+    console.log('===== RAW GIGACHAT RESPONSE =====');
+    console.log(rawText);
+    console.log('===== END =====');
     let cleaned = rawText
         .replace(/```json\s*/gi, '')
         .replace(/```\s*/g, '')
@@ -315,7 +333,7 @@ ${text}`;
             system,
             user,
             temperature: isTopic ? 0.5 : 0.1,
-            maxTokens: isTopic ? 6000 : 4000,
+            maxTokens: 8000,
             model: MODEL_PRO,
         });
 
